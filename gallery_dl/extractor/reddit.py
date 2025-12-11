@@ -57,9 +57,9 @@ class RedditExtractor(Extractor):
 
                 if submission:
                     submission["comment"] = None
-                    submission["date"] = text.parse_timestamp(
+                    submission["date"] = self.parse_timestamp(
                         submission["created_utc"])
-                    yield Message.Directory, submission
+                    yield Message.Directory, "", submission
                     visited.add(submission["id"])
                     submission["num"] = 0
 
@@ -86,7 +86,7 @@ class RedditExtractor(Extractor):
                             yield Message.Url, url, submission
 
                     elif embeds and "media_metadata" in media:
-                        for embed in self._extract_embed(submission):
+                        for embed in self._extract_embed(submission, media):
                             submission["num"] += 1
                             text.nameext_from_url(embed, submission)
                             yield Message.Url, embed, submission
@@ -105,14 +105,14 @@ class RedditExtractor(Extractor):
                             urls.append((url, submission))
 
                 elif parentdir:
-                    yield Message.Directory, comments[0]
+                    yield Message.Directory, "", comments[0]
 
                 if self.api.comments:
                     if comments and not submission:
                         submission = comments[0]
                         submission.setdefault("num", 0)
                         if not parentdir:
-                            yield Message.Directory, submission
+                            yield Message.Directory, "", submission
 
                     for comment in comments:
                         media = (embeds and "media_metadata" in comment)
@@ -124,11 +124,11 @@ class RedditExtractor(Extractor):
 
                         data = submission.copy()
                         data["comment"] = comment
-                        comment["date"] = text.parse_timestamp(
+                        comment["date"] = self.parse_timestamp(
                             comment["created_utc"])
 
                         if media:
-                            for url in self._extract_embed(comment):
+                            for url in self._extract_embed(data, comment):
                                 data["num"] += 1
                                 text.nameext_from_url(url, data)
                                 yield Message.Url, url, data
@@ -199,8 +199,8 @@ class RedditExtractor(Extractor):
                     submission["id"], item["media_id"])
                 self.log.debug(src)
 
-    def _extract_embed(self, submission):
-        meta = submission["media_metadata"]
+    def _extract_embed(self, submission, media):
+        meta = media["media_metadata"]
         if not meta:
             return
 
@@ -317,8 +317,8 @@ class RedditSubmissionExtractor(RedditExtractor):
     """Extractor for URLs from a submission on reddit.com"""
     subcategory = "submission"
     pattern = (r"(?:https?://)?(?:"
-               r"(?:\w+\.)?reddit\.com/(?:(?:r|u|user)/[^/?#]+"
-               r"/comments|gallery)|redd\.it)/([a-z0-9]+)")
+               r"(?:\w+\.)?reddit\.com/(?:(?:(?:r|u|user)/[^/?#]+/)?"
+               r"comments|gallery)|redd\.it)/([a-z0-9]+)")
     example = "https://www.reddit.com/r/SUBREDDIT/comments/id/"
 
     def __init__(self, match):
@@ -352,7 +352,7 @@ class RedditImageExtractor(Extractor):
     def items(self):
         url = f"https://{self.domain}/{self.path}{self.query}"
         data = text.nameext_from_url(url)
-        yield Message.Directory, data
+        yield Message.Directory, "", data
         yield Message.Url, url, data
 
 
@@ -394,7 +394,7 @@ class RedditAPI():
         self.morecomments = config("morecomments", False)
         self._warn_429 = False
 
-        if config("api") == "rest":
+        if config("api") != "oauth":
             self.root = "https://www.reddit.com"
             self.headers = None
             self.authenticate = util.noop

@@ -81,7 +81,7 @@ class SmugmugAlbumExtractor(SmugmugExtractor):
         del album["Uris"]
         data = {"Album": album, "User": user}
 
-        yield Message.Directory, data
+        yield Message.Directory, "", data
 
         for image in self.api.album_images(self.album_id, "ImageSizeDetails"):
             url = self._select_format(image)
@@ -93,7 +93,7 @@ class SmugmugImageExtractor(SmugmugExtractor):
     """Extractor for individual smugmug images"""
     subcategory = "image"
     archive_fmt = "{Image[ImageKey]}"
-    pattern = BASE_PATTERN + r"(?:/[^/?#]+)+/i-([^/?#-]+)"
+    pattern = rf"{BASE_PATTERN}(?:/[^/?#]+)+/i-([^/?#-]+)"
     example = "https://USER.smugmug.com/PATH/i-ID"
 
     def __init__(self, match):
@@ -107,14 +107,14 @@ class SmugmugImageExtractor(SmugmugExtractor):
         data = {"Image": image}
         text.nameext_from_url(url, data)
 
-        yield Message.Directory, data
+        yield Message.Directory, "", data
         yield Message.Url, url, data
 
 
 class SmugmugPathExtractor(SmugmugExtractor):
     """Extractor for smugmug albums from URL paths and users"""
     subcategory = "path"
-    pattern = BASE_PATTERN + r"((?:/[^/?#a-fh-mo-z][^/?#]*)*)/?$"
+    pattern = rf"{BASE_PATTERN}((?:/[^/?#a-fh-mo-z][^/?#]*)*)/?$"
     example = "https://USER.smugmug.com/PATH"
 
     def __init__(self, match):

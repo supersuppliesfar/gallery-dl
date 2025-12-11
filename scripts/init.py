@@ -317,7 +317,7 @@ def parse_args(args=None):
 
     parser.add_argument(
         "-s", "--subcategory",
-        dest="subcategories", metavar="SUBCaT", action="append")
+        dest="subcategories", metavar="SUBCaT", action="append", default=[])
     parser.add_argument(
         "-n", "--name",
         dest="site_name", metavar="TITLE")
@@ -357,6 +357,12 @@ def parse_args(args=None):
 
     args = parser.parse_args()
     args.category = args.category.lower()
+
+    if "://" in args.category:
+        base = args.category.split("/", 3)
+        if not args.root:
+            args.root = "/".join(base[:3])
+        args.category = re.sub(r"\W+", "", base[2].split(".")[-2])
 
     if root := args.root:
         if "://" in root:

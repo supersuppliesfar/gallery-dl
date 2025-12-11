@@ -9,10 +9,9 @@
 """Extractors for https://aryion.com/"""
 
 from .common import Extractor, Message
-from .. import text, util, exception
+from .. import text, util, dt, exception
 from ..cache import cache
 from email.utils import parsedate_tz
-from datetime import datetime
 
 BASE_PATTERN = r"(?:https?://)?(?:www\.)?aryion\.com/g4"
 
@@ -64,7 +63,7 @@ class AryionExtractor(Extractor):
             if post := self._parse_post(post_id):
                 if data:
                     post.update(data)
-                yield Message.Directory, post
+                yield Message.Directory, "", post
                 yield Message.Url, post["url"], post
             elif post is False and self.recursive:
                 base = self.root + "/g4/view/"
@@ -156,7 +155,7 @@ class AryionExtractor(Extractor):
             "artist": artist,
             "path"  : text.split_html(extr(
                 "cookiecrumb'>", '</span'))[4:-1:2],
-            "date"  : datetime(*parsedate_tz(lmod)[:6]),
+            "date"  : dt.datetime(*parsedate_tz(lmod)[:6]),
             "size"  : text.parse_int(clen),
             "views" : text.parse_int(extr("Views</b>:", "<").replace(",", "")),
             "width" : text.parse_int(extr("Resolution</b>:", "x")),
@@ -176,7 +175,7 @@ class AryionGalleryExtractor(AryionExtractor):
     """Extractor for a user's gallery on eka's portal"""
     subcategory = "gallery"
     categorytransfer = True
-    pattern = BASE_PATTERN + r"/(?:gallery/|user/|latest.php\?name=)([^/?#]+)"
+    pattern = rf"{BASE_PATTERN}/(?:gallery/|user/|latest.php\?name=)([^/?#]+)"
     example = "https://aryion.com/g4/gallery/USER"
 
     def __init__(self, match):
@@ -207,7 +206,7 @@ class AryionFavoriteExtractor(AryionExtractor):
     directory_fmt = ("{category}", "{user!l}", "favorites")
     archive_fmt = "f_{user}_{id}"
     categorytransfer = True
-    pattern = BASE_PATTERN + r"/favorites/([^/?#]+)"
+    pattern = rf"{BASE_PATTERN}/favorites/([^/?#]+)"
     example = "https://aryion.com/g4/favorites/USER"
 
     def posts(self):
@@ -220,7 +219,7 @@ class AryionTagExtractor(AryionExtractor):
     subcategory = "tag"
     directory_fmt = ("{category}", "tags", "{search_tags}")
     archive_fmt = "t_{search_tags}_{id}"
-    pattern = BASE_PATTERN + r"/tags\.php\?([^#]+)"
+    pattern = rf"{BASE_PATTERN}/tags\.php\?([^#]+)"
     example = "https://aryion.com/g4/tags.php?tag=TAG"
 
     def _init(self):
@@ -235,10 +234,34 @@ class AryionTagExtractor(AryionExtractor):
         return self._pagination_params(url, self.params)
 
 
+class AryionSearchExtractor(AryionExtractor):
+    """Extractor for searches on eka's portal"""
+    subcategory = "search"
+    directory_fmt = ("{category}", "searches", "{search[prefix]}"
+                     "{search[q]|search[tags]|search[user]}")
+    archive_fmt = ("s_{search[prefix]}"
+                   "{search[q]|search[tags]|search[user]}_{id}")
+    pattern = rf"{BASE_PATTERN}/search\.php\?([^#]+)"
+    example = "https://aryion.com/g4/search.php?q=TEXT&tags=TAGS&user=USER"
+
+    def metadata(self):
+        params = text.parse_query(self.user)
+        return {"search": {
+            **params,
+            "prefix": ("" if params.get("q") else
+                       "t_" if params.get("tags") else
+                       "u_" if params.get("user") else ""),
+        }}
+
+    def posts(self):
+        url = f"{self.root}/g4/search.php?{self.user}"
+        return self._pagination_next(url)
+
+
 class AryionPostExtractor(AryionExtractor):
     """Extractor for individual posts on eka's portal"""
     subcategory = "post"
-    pattern = BASE_PATTERN + r"/view/(\d+)"
+    pattern = rf"{BASE_PATTERN}/view/(\d+)"
     example = "https://aryion.com/g4/view/12345"
 
     def posts(self):

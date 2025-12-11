@@ -9,7 +9,7 @@
 """Extractors for https://www.newgrounds.com/"""
 
 from .common import Extractor, Message, Dispatch
-from .. import text, util, exception
+from .. import text, util, dt, exception
 from ..cache import cache
 import itertools
 
@@ -34,7 +34,7 @@ class NewgroundsExtractor(Extractor):
         self.user_root = f"https://{self.user}.newgrounds.com"
 
     def _init(self):
-        self._extract_comment_urls = util.re(
+        self._extract_comment_urls = text.re(
             r'(?:<img |data-smartload-)src="([^"]+)').findall
         self.flash = self.config("flash", True)
 
@@ -58,13 +58,13 @@ class NewgroundsExtractor(Extractor):
                 post = self.extract_post(post_url)
                 url = post.get("url")
             except Exception as exc:
-                self.log.debug("", exc_info=exc)
+                self.log.traceback(exc)
                 url = None
 
             if url:
                 if metadata:
                     post.update(metadata)
-                yield Message.Directory, post
+                yield Message.Directory, "", post
                 post["num"] = 0
                 yield Message.Url, url, text.nameext_from_url(url, post)
 
@@ -88,6 +88,7 @@ class NewgroundsExtractor(Extractor):
                     text.nameext_from_url(url, post)
                     yield Message.Url, url, post
             else:
+                self.status |= 1
                 self.log.warning(
                     "Unable to get download URL for '%s'", post_url)
 
@@ -218,7 +219,7 @@ class NewgroundsExtractor(Extractor):
             "description": text.unescape(extr(':description" content="', '"')),
             "type"       : "art",
             "_type"      : "i",
-            "date"       : text.parse_datetime(extr(
+            "date"       : dt.parse_iso(extr(
                 'itemprop="datePublished" content="', '"')),
             "rating"     : extr('class="rated-', '"'),
             "url"        : full('src="', '"'),
@@ -268,7 +269,7 @@ class NewgroundsExtractor(Extractor):
             "description": text.unescape(extr(':description" content="', '"')),
             "type"       : "audio",
             "_type"      : "a",
-            "date"       : text.parse_datetime(extr(
+            "date"       : dt.parse_iso(extr(
                 'itemprop="datePublished" content="', '"')),
             "url"        : extr('{"url":"', '"').replace("\\/", "/"),
             "index"      : text.parse_int(index),
@@ -287,7 +288,7 @@ class NewgroundsExtractor(Extractor):
             src = src.replace("\\/", "/")
             formats = ()
             type = extr(',"description":"', '"')
-            date = text.parse_datetime(extr(
+            date = dt.parse_iso(extr(
                 'itemprop="datePublished" content="', '"'))
             if type:
                 type = type.rpartition(" ")[2].lower()
@@ -302,7 +303,7 @@ class NewgroundsExtractor(Extractor):
             sources = self.request_json(url, headers=headers)["sources"]
             formats = self._video_formats(sources)
             src = next(formats, "")
-            date = text.parse_timestamp(src.rpartition("?")[2])
+            date = self.parse_timestamp(src.rpartition("?")[2])
             type = "movie"
 
         return {
@@ -321,7 +322,7 @@ class NewgroundsExtractor(Extractor):
 
     def _video_formats(self, sources):
         src = sources["360p"][0]["src"]
-        sub = util.re(r"\.360p\.\w+").sub
+        sub = text.re(r"\.360p\.\w+").sub
 
         for fmt in self.format:
             try:
@@ -411,7 +412,7 @@ class NewgroundsImageExtractor(NewgroundsExtractor):
 class NewgroundsMediaExtractor(NewgroundsExtractor):
     """Extractor for a media file from newgrounds.com"""
     subcategory = "media"
-    pattern = BASE_PATTERN + r"(/(?:portal/view|audio/listen)/\d+)"
+    pattern = rf"{BASE_PATTERN}(/(?:portal/view|audio/listen)/\d+)"
     example = "https://www.newgrounds.com/portal/view/12345"
 
     def __init__(self, match):
@@ -426,34 +427,34 @@ class NewgroundsMediaExtractor(NewgroundsExtractor):
 class NewgroundsArtExtractor(NewgroundsExtractor):
     """Extractor for all images of a newgrounds user"""
     subcategory = _path = "art"
-    pattern = USER_PATTERN + r"/art(?:(?:/page/|/?\?page=)(\d+))?/?$"
+    pattern = rf"{USER_PATTERN}/art(?:(?:/page/|/?\?page=)(\d+))?/?$"
     example = "https://USER.newgrounds.com/art"
 
 
 class NewgroundsAudioExtractor(NewgroundsExtractor):
     """Extractor for all audio submissions of a newgrounds user"""
     subcategory = _path = "audio"
-    pattern = USER_PATTERN + r"/audio(?:(?:/page/|/?\?page=)(\d+))?/?$"
+    pattern = rf"{USER_PATTERN}/audio(?:(?:/page/|/?\?page=)(\d+))?/?$"
     example = "https://USER.newgrounds.com/audio"
 
 
 class NewgroundsMoviesExtractor(NewgroundsExtractor):
     """Extractor for all movies of a newgrounds user"""
     subcategory = _path = "movies"
-    pattern = USER_PATTERN + r"/movies(?:(?:/page/|/?\?page=)(\d+))?/?$"
+    pattern = rf"{USER_PATTERN}/movies(?:(?:/page/|/?\?page=)(\d+))?/?$"
     example = "https://USER.newgrounds.com/movies"
 
 
 class NewgroundsGamesExtractor(NewgroundsExtractor):
     """Extractor for a newgrounds user's games"""
     subcategory = _path = "games"
-    pattern = USER_PATTERN + r"/games(?:(?:/page/|/?\?page=)(\d+))?/?$"
+    pattern = rf"{USER_PATTERN}/games(?:(?:/page/|/?\?page=)(\d+))?/?$"
     example = "https://USER.newgrounds.com/games"
 
 
 class NewgroundsUserExtractor(Dispatch, NewgroundsExtractor):
     """Extractor for a newgrounds user profile"""
-    pattern = USER_PATTERN + r"/?$"
+    pattern = rf"{USER_PATTERN}/?$"
     example = "https://USER.newgrounds.com"
 
     def items(self):
@@ -470,7 +471,7 @@ class NewgroundsFavoriteExtractor(NewgroundsExtractor):
     """Extractor for posts favorited by a newgrounds user"""
     subcategory = "favorite"
     directory_fmt = ("{category}", "{user}", "Favorites")
-    pattern = (USER_PATTERN + r"/favorites(?!/following)(?:/(art|audio|movies)"
+    pattern = (rf"{USER_PATTERN}/favorites(?!/following)(?:/(art|audio|movies)"
                r"(?:(?:/page/|/?\?page=)(\d+))?)?")
     example = "https://USER.newgrounds.com/favorites"
 
@@ -516,7 +517,7 @@ class NewgroundsFavoriteExtractor(NewgroundsExtractor):
 class NewgroundsFollowingExtractor(NewgroundsFavoriteExtractor):
     """Extractor for a newgrounds user's favorited users"""
     subcategory = "following"
-    pattern = (USER_PATTERN + r"/favorites/(following)"
+    pattern = (rf"{USER_PATTERN}/favorites/(following)"
                r"(?:(?:/page/|/?\?page=)(\d+))?")
 
     example = "https://USER.newgrounds.com/favorites/following"
@@ -538,7 +539,7 @@ class NewgroundsSearchExtractor(NewgroundsExtractor):
     """Extractor for newgrounds.com search reesults"""
     subcategory = "search"
     directory_fmt = ("{category}", "search", "{search_tags}")
-    pattern = BASE_PATTERN + r"/search/conduct/([^/?#]+)/?\?([^#]+)"
+    pattern = rf"{BASE_PATTERN}/search/conduct/([^/?#]+)/?\?([^#]+)"
     example = "https://www.newgrounds.com/search/conduct/art?terms=QUERY"
 
     def __init__(self, match):

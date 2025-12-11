@@ -5,7 +5,6 @@
 # published by the Free Software Foundation.
 
 from gallery_dl.extractor import patreon
-import datetime
 from gallery_dl import exception
 
 
@@ -21,7 +20,7 @@ __tests__ = (
     "comment_count": int,
     "content"      : str,
     "creator"      : dict,
-    "date"         : datetime.datetime,
+    "date"         : "type:datetime",
     "id"           : int,
     "images"       : list,
     "like_count"   : int,
@@ -119,6 +118,8 @@ __tests__ = (
     "#comment" : "postfile + attachments",
     "#class"   : patreon.PatreonPostExtractor,
     "#count"   : 4,
+
+    "file": {dict, None},
 },
 
 {

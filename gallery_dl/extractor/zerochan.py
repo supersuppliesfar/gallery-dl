@@ -23,7 +23,7 @@ class ZerochanExtractor(BooruExtractor):
     filename_fmt = "{id}.{extension}"
     archive_fmt = "{id}"
     page_start = 1
-    per_page = 250
+    per_page = 200
     cookies_domain = ".zerochan.net"
     cookies_names = ("z_id", "z_hash")
     useragent = util.USERAGENT
@@ -76,7 +76,7 @@ class ZerochanExtractor(BooruExtractor):
         data = {
             "id"      : text.parse_int(entry_id),
             "file_url": jsonld["contentUrl"],
-            "date"    : text.parse_datetime(jsonld["datePublished"]),
+            "date"    : self.parse_datetime_iso(jsonld["datePublished"]),
             "width"   : text.parse_int(jsonld["width"][:-3]),
             "height"  : text.parse_int(jsonld["height"][:-3]),
             "size"    : text.parse_bytes(jsonld["contentSize"][:-1]),
@@ -128,7 +128,7 @@ class ZerochanExtractor(BooruExtractor):
         return data
 
     def _parse_json(self, txt):
-        txt = util.re(r"[\x00-\x1f\x7f]").sub("", txt)
+        txt = text.re(r"[\x00-\x1f\x7f]").sub("", txt)
         main, _, tags = txt.partition('tags": [')
 
         item = {}
@@ -160,7 +160,7 @@ class ZerochanExtractor(BooruExtractor):
 class ZerochanTagExtractor(ZerochanExtractor):
     subcategory = "tag"
     directory_fmt = ("{category}", "{search_tags}")
-    pattern = BASE_PATTERN + r"/(?!\d+$)([^/?#]+)/?(?:\?([^#]+))?"
+    pattern = rf"{BASE_PATTERN}/(?!\d+$)([^/?#]+)/?(?:\?([^#]+))?"
     example = "https://www.zerochan.net/TAG"
 
     def __init__(self, match):
@@ -188,9 +188,10 @@ class ZerochanTagExtractor(ZerochanExtractor):
 
     def posts_html(self):
         url = self.root + "/" + self.search_tag
-        params = text.parse_query(self.query)
-        params["p"] = text.parse_int(params.get("p"), self.page_start)
         metadata = self.config("metadata")
+
+        params = text.parse_query(self.query, empty=True)
+        params["p"] = text.parse_int(params.get("p"), self.page_start)
 
         while True:
             try:
@@ -231,11 +232,11 @@ class ZerochanTagExtractor(ZerochanExtractor):
     def posts_api(self):
         url = self.root + "/" + self.search_tag
         metadata = self.config("metadata")
-        params = {
-            "json": "1",
-            "l"   : self.per_page,
-            "p"   : self.page_start,
-        }
+
+        params = text.parse_query(self.query, empty=True)
+        params["p"] = text.parse_int(params.get("p"), self.page_start)
+        params.setdefault("l", self.per_page)
+        params["json"] = "1"
 
         while True:
             try:
@@ -285,7 +286,7 @@ class ZerochanTagExtractor(ZerochanExtractor):
 
 class ZerochanImageExtractor(ZerochanExtractor):
     subcategory = "image"
-    pattern = BASE_PATTERN + r"/(\d+)"
+    pattern = rf"{BASE_PATTERN}/(\d+)"
     example = "https://www.zerochan.net/12345"
 
     def posts(self):

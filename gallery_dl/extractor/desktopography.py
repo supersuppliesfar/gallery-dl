@@ -22,7 +22,7 @@ class DesktopographyExtractor(Extractor):
 class DesktopographySiteExtractor(DesktopographyExtractor):
     """Extractor for all desktopography exhibitions """
     subcategory = "site"
-    pattern = BASE_PATTERN + r"/$"
+    pattern = rf"{BASE_PATTERN}/$"
     example = "https://desktopography.net/"
 
     def items(self):
@@ -41,7 +41,7 @@ class DesktopographySiteExtractor(DesktopographyExtractor):
 class DesktopographyExhibitionExtractor(DesktopographyExtractor):
     """Extractor for a yearly desktopography exhibition"""
     subcategory = "exhibition"
-    pattern = BASE_PATTERN + r"/exhibition-([^/?#]+)/"
+    pattern = rf"{BASE_PATTERN}/exhibition-([^/?#]+)/"
     example = "https://desktopography.net/exhibition-2020/"
 
     def __init__(self, match):
@@ -70,7 +70,7 @@ class DesktopographyExhibitionExtractor(DesktopographyExtractor):
 class DesktopographyEntryExtractor(DesktopographyExtractor):
     """Extractor for all resolutions of a desktopography wallpaper"""
     subcategory = "entry"
-    pattern = BASE_PATTERN + r"/portfolios/([\w-]+)"
+    pattern = rf"{BASE_PATTERN}/portfolios/([\w-]+)"
     example = "https://desktopography.net/portfolios/NAME/"
 
     def __init__(self, match):
@@ -82,7 +82,7 @@ class DesktopographyEntryExtractor(DesktopographyExtractor):
         page = self.request(url).text
 
         entry_data = {"entry": self.entry}
-        yield Message.Directory, entry_data
+        yield Message.Directory, "", entry_data
 
         for image_data in text.extract_iter(
                 page,

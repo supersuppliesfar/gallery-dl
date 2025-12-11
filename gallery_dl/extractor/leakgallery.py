@@ -37,7 +37,7 @@ class LeakgalleryExtractor(Extractor):
 
             media["url"] = url = f"https://cdn.leakgallery.com/{path}"
             text.nameext_from_url(url, media)
-            yield Message.Directory, media
+            yield Message.Directory, "", media
             yield Message.Url, url, media
 
     def _pagination(self, type, base, params=None, creator=None, pnum=1):
@@ -81,7 +81,7 @@ class LeakgalleryUserExtractor(LeakgalleryExtractor):
 class LeakgalleryTrendingExtractor(LeakgalleryExtractor):
     """Extractor for trending posts on leakgallery.com"""
     subcategory = "trending"
-    pattern = BASE_PATTERN + r"/trending-medias(?:/([\w-]+))?"
+    pattern = rf"{BASE_PATTERN}/trending-medias(?:/([\w-]+))?"
     example = "https://leakgallery.com/trending-medias/Week"
 
     def items(self):
@@ -93,7 +93,7 @@ class LeakgalleryTrendingExtractor(LeakgalleryExtractor):
 class LeakgalleryMostlikedExtractor(LeakgalleryExtractor):
     """Extractor for most liked posts on leakgallery.com"""
     subcategory = "mostliked"
-    pattern = BASE_PATTERN + r"/most-liked"
+    pattern = rf"{BASE_PATTERN}/most-liked"
     example = "https://leakgallery.com/most-liked"
 
     def items(self):
@@ -104,7 +104,7 @@ class LeakgalleryMostlikedExtractor(LeakgalleryExtractor):
 class LeakgalleryPostExtractor(LeakgalleryExtractor):
     """Extractor for individual posts on leakgallery.com"""
     subcategory = "post"
-    pattern = BASE_PATTERN + r"/([^/?#]+)/(\d+)"
+    pattern = rf"{BASE_PATTERN}/([^/?#]+)/(\d+)"
     example = "https://leakgallery.com/CREATOR/12345"
 
     def items(self):
@@ -134,7 +134,7 @@ class LeakgalleryPostExtractor(LeakgalleryExtractor):
                     "url": url,
                 }
                 text.nameext_from_url(url, data)
-                yield Message.Directory, data
+                yield Message.Directory, "", data
                 yield Message.Url, url, data
         except Exception as exc:
             self.log.error("Failed to extract post page %s/%s: %s",

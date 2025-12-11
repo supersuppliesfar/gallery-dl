@@ -25,6 +25,7 @@ class TiktokExtractor(Extractor):
     def _init(self):
         self.audio = self.config("audio", True)
         self.video = self.config("videos", True)
+        self.cover = self.config("covers", False)
 
     def items(self):
         for tiktok_url in self.urls():
@@ -43,10 +44,10 @@ class TiktokExtractor(Extractor):
 
             post = video_detail["itemInfo"]["itemStruct"]
             post["user"] = (a := post.get("author")) and a["uniqueId"] or ""
-            post["date"] = text.parse_timestamp(post["createTime"])
+            post["date"] = self.parse_timestamp(post["createTime"])
             original_title = title = post["desc"]
 
-            yield Message.Directory, post
+            yield Message.Directory, "", post
             ytdl_media = False
 
             if "imagePost" in post:
@@ -70,12 +71,14 @@ class TiktokExtractor(Extractor):
                 if self.audio and "music" in post:
                     if self.audio == "ytdl":
                         ytdl_media = "audio"
-                    else:
-                        url = self._extract_audio(post)
+                    elif url := self._extract_audio(post):
                         yield Message.Url, url, post
 
-            elif self.video and "video" in post:
-                ytdl_media = "video"
+            elif "video" in post:
+                if self.video:
+                    ytdl_media = "video"
+                if self.cover and (url := self._extract_cover(post, "video")):
+                    yield Message.Url, url, post
 
             else:
                 self.log.info("%s: Skipping post", tiktok_url)
@@ -144,6 +147,30 @@ class TiktokExtractor(Extractor):
             post["extension"] = "mp3"
         return url
 
+    def _extract_cover(self, post, type):
+        media = post[type]
+
+        for cover_id in ("thumbnail", "cover", "originCover", "dynamicCover"):
+            if url := media.get(cover_id):
+                break
+        else:
+            return
+
+        text.nameext_from_url(url, post)
+        post.update({
+            "type"     : "cover",
+            "extension": "jpg",
+            "image"    : url,
+            "title"    : post["desc"] or f"TikTok {type} cover #{post['id']}",
+            "duration" : media.get("duration"),
+            "num"      : 0,
+            "img_id"   : "",
+            "cover_id" : cover_id,
+            "width"    : 0,
+            "height"   : 0,
+        })
+        return url
+
     def _check_status_code(self, detail, url):
         status = detail.get("statusCode")
         if not status:
@@ -166,7 +193,7 @@ class TiktokExtractor(Extractor):
 class TiktokPostExtractor(TiktokExtractor):
     """Extract a single video or photo TikTok link"""
     subcategory = "post"
-    pattern = BASE_PATTERN + r"/(?:@([\w_.-]*)|share)/(?:phot|vide)o/(\d+)"
+    pattern = rf"{BASE_PATTERN}/(?:@([\w_.-]*)|share)/(?:phot|vide)o/(\d+)"
     example = "https://www.tiktok.com/@USER/photo/1234567890"
 
     def urls(self):
@@ -199,7 +226,7 @@ class TiktokVmpostExtractor(TiktokExtractor):
 class TiktokUserExtractor(TiktokExtractor):
     """Extract a TikTok user's profile"""
     subcategory = "user"
-    pattern = BASE_PATTERN + r"/@([\w_.-]+)/?(?:$|\?|#)"
+    pattern = rf"{BASE_PATTERN}/@([\w_.-]+)/?(?:$|\?|#)"
     example = "https://www.tiktok.com/@USER"
 
     def _init(self):
@@ -214,7 +241,7 @@ class TiktokUserExtractor(TiktokExtractor):
         except (ImportError, SyntaxError) as exc:
             self.log.error("Cannot import module '%s'",
                            getattr(exc, "name", ""))
-            self.log.debug("", exc_info=exc)
+            self.log.traceback(exc)
             raise exception.ExtractionError("yt-dlp or youtube-dl is required "
                                             "for this feature!")
 
@@ -254,7 +281,7 @@ class TiktokUserExtractor(TiktokExtractor):
                 self.log.warning("Unable to extract 'avatar' URL (%s: %s)",
                                  exc.__class__.__name__, exc)
             else:
-                yield Message.Directory, avatar
+                yield Message.Directory, "", avatar
                 yield Message.Url, avatar_url, avatar
 
         with ytdl_instance as ydl:

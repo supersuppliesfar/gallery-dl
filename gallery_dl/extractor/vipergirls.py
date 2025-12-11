@@ -75,7 +75,7 @@ class VipergirlsExtractor(Extractor):
             data["count"] = len(images)
             del data["imagecount"]
 
-            yield Message.Directory, data
+            yield Message.Directory, "", data
             if images:
                 for data["num"], image in enumerate(images, 1):
                     yield Message.Queue, image.attrib["main_url"], data
@@ -124,8 +124,8 @@ class VipergirlsExtractor(Extractor):
 class VipergirlsThreadExtractor(VipergirlsExtractor):
     """Extractor for vipergirls threads"""
     subcategory = "thread"
-    pattern = (BASE_PATTERN +
-               r"/threads/(\d+)(?:-[^/?#]+)?(/page\d+)?(?:$|#|\?(?!p=))")
+    pattern = (rf"{BASE_PATTERN}"
+               rf"/threads/(\d+)(?:-[^/?#]+)?(/page\d+)?(?:$|#|\?(?!p=))")
     example = "https://vipergirls.to/threads/12345-TITLE"
 
     def __init__(self, match):
@@ -140,8 +140,8 @@ class VipergirlsThreadExtractor(VipergirlsExtractor):
 class VipergirlsPostExtractor(VipergirlsExtractor):
     """Extractor for vipergirls posts"""
     subcategory = "post"
-    pattern = (BASE_PATTERN +
-               r"/threads/(\d+)(?:-[^/?#]+)?\?p=\d+[^#]*#post(\d+)")
+    pattern = (rf"{BASE_PATTERN}"
+               rf"/threads/(\d+)(?:-[^/?#]+)?\?p=\d+[^#]*#post(\d+)")
     example = "https://vipergirls.to/threads/12345-TITLE?p=23456#post23456"
 
     def __init__(self, match):

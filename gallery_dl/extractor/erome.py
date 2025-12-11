@@ -64,7 +64,7 @@ class EromeExtractor(Extractor):
 class EromeAlbumExtractor(EromeExtractor):
     """Extractor for albums on erome.com"""
     subcategory = "album"
-    pattern = BASE_PATTERN + r"/a/(\w+)"
+    pattern = rf"{BASE_PATTERN}/a/(\w+)"
     example = "https://www.erome.com/a/ID"
 
     def items(self):
@@ -74,8 +74,12 @@ class EromeAlbumExtractor(EromeExtractor):
         try:
             page = self.request(url).text
         except exception.HttpError as exc:
+            if exc.status == 410:
+                msg = text.extr(exc.response.text, "<h1>", "<")
+            else:
+                msg = "Unable to fetch album page"
             raise exception.AbortExtraction(
-                f"{album_id}: Unable to fetch album page ({exc})")
+                f"{album_id}: {msg} ({exc})")
 
         title, pos = text.extract(
             page, 'property="og:title" content="', '"')
@@ -96,7 +100,7 @@ class EromeAlbumExtractor(EromeExtractor):
             if not date:
                 ts = text.extr(group, '?v=', '"')
                 if len(ts) > 1:
-                    date = text.parse_timestamp(ts)
+                    date = self.parse_timestamp(ts)
 
         data = {
             "album_id": album_id,
@@ -110,14 +114,14 @@ class EromeAlbumExtractor(EromeExtractor):
             "_http_headers": {"Referer": url},
         }
 
-        yield Message.Directory, data
+        yield Message.Directory, "", data
         for data["num"], url in enumerate(urls, 1):
             yield Message.Url, url, text.nameext_from_url(url, data)
 
 
 class EromeUserExtractor(EromeExtractor):
     subcategory = "user"
-    pattern = BASE_PATTERN + r"/(?!a/|search\?)([^/?#]+)(?:/?\?([^#]+))?"
+    pattern = rf"{BASE_PATTERN}/(?!a/|search\?)([^/?#]+)(?:/?\?([^#]+))?"
     example = "https://www.erome.com/USER"
 
     def albums(self):
@@ -133,7 +137,7 @@ class EromeUserExtractor(EromeExtractor):
 
 class EromeSearchExtractor(EromeExtractor):
     subcategory = "search"
-    pattern = BASE_PATTERN + r"/search/?\?(q=[^#]+)"
+    pattern = rf"{BASE_PATTERN}/search/?\?(q=[^#]+)"
     example = "https://www.erome.com/search?q=QUERY"
 
     def albums(self):

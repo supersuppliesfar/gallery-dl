@@ -47,7 +47,7 @@ class IwaraExtractor(Extractor):
 
             group_info["type"] = "image"
             group_info["count"] = len(files)
-            yield Message.Directory, group_info
+            yield Message.Directory, "", group_info
             for num, file in enumerate(files, 1):
                 file_info = self.extract_media_info(file, None)
                 file_id = file_info["file_id"]
@@ -78,7 +78,7 @@ class IwaraExtractor(Extractor):
                                video["id"], exc.__class__.__name__, exc)
                 continue
 
-            yield Message.Directory, info
+            yield Message.Directory, "", info
             yield Message.Url, f"https:{download_url}", info
 
     def items_user(self, users, key=None):
@@ -122,10 +122,10 @@ class IwaraExtractor(Extractor):
             info["file_id"] = file_info.get("id")
             info["filename"] = filename
             info["extension"] = extension
-            info["date"] = text.parse_datetime(
-                file_info.get("createdAt"), "%Y-%m-%dT%H:%M:%S.%fZ")
-            info["date_updated"] = text.parse_datetime(
-                file_info.get("updatedAt"), "%Y-%m-%dT%H:%M:%S.%fZ")
+            info["date"] = self.parse_datetime_iso(
+                file_info.get("createdAt"))
+            info["date_updated"] = self.parse_datetime_iso(
+                file_info.get("updatedAt"))
             info["mime"] = file_info.get("mime")
             info["size"] = file_info.get("size")
             info["width"] = file_info.get("width")
@@ -144,8 +144,7 @@ class IwaraExtractor(Extractor):
             "status" : user.get("status"),
             "role"   : user.get("role"),
             "premium": user.get("premium"),
-            "date"   : text.parse_datetime(
-                user.get("createdAt"), "%Y-%m-%dT%H:%M:%S.000Z"),
+            "date"   : self.parse_datetime_iso(user.get("createdAt")),
             "description": profile.get("body"),
         }
 

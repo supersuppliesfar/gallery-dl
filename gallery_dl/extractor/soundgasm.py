@@ -26,7 +26,7 @@ class SoundgasmExtractor(Extractor):
     def items(self):
         for sound in map(self._extract_sound, self.sounds()):
             url = sound["url"]
-            yield Message.Directory, sound
+            yield Message.Directory, "", sound
             yield Message.Url, url, text.nameext_from_url(url, sound)
 
     def _extract_sound(self, url):
@@ -50,7 +50,7 @@ class SoundgasmExtractor(Extractor):
 class SoundgasmAudioExtractor(SoundgasmExtractor):
     """Extractor for audio clips from soundgasm.net"""
     subcategory = "audio"
-    pattern = BASE_PATTERN + r"/([^/?#]+)/([^/?#]+)"
+    pattern = rf"{BASE_PATTERN}/([^/?#]+)/([^/?#]+)"
     example = "https://soundgasm.net/u/USER/TITLE"
 
     def __init__(self, match):
@@ -64,7 +64,7 @@ class SoundgasmAudioExtractor(SoundgasmExtractor):
 class SoundgasmUserExtractor(SoundgasmExtractor):
     """Extractor for all sounds from a soundgasm user"""
     subcategory = "user"
-    pattern = BASE_PATTERN + r"/([^/?#]+)/?$"
+    pattern = rf"{BASE_PATTERN}/([^/?#]+)/?$"
     example = "https://soundgasm.net/u/USER"
 
     def __init__(self, match):

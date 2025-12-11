@@ -20,7 +20,7 @@ class ShopifyExtractor(BaseExtractor):
 
     def items(self):
         data = self.metadata()
-        yield Message.Directory, data
+        yield Message.Directory, "", data
 
         for product in self.products():
             for num, image in enumerate(product.pop("images"), 1):
@@ -90,7 +90,7 @@ class ShopifyCollectionExtractor(ShopifyExtractor):
     """Base class for collection extractors for Shopify based sites"""
     subcategory = "collection"
     directory_fmt = ("{category}", "{collection[title]}")
-    pattern = BASE_PATTERN + r"(/collections/[\w-]+)/?(?:$|[?#])"
+    pattern = rf"{BASE_PATTERN}(/collections/[\w-]+)/?(?:$|[?#])"
     example = "https://www.fashionnova.com/collections/TITLE"
 
     def metadata(self):
@@ -113,7 +113,7 @@ class ShopifyProductExtractor(ShopifyExtractor):
     """Base class for product extractors for Shopify based sites"""
     subcategory = "product"
     directory_fmt = ("{category}", "Products")
-    pattern = BASE_PATTERN + r"((?:/collections/[\w-]+)?/products/[\w-]+)"
+    pattern = rf"{BASE_PATTERN}((?:/collections/[\w-]+)?/products/[\w-]+)"
     example = "https://www.fashionnova.com/collections/TITLE/products/NAME"
 
     def products(self):

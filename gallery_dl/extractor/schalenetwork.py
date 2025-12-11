@@ -126,7 +126,7 @@ class SchalenetworkGalleryExtractor(SchalenetworkExtractor, GalleryExtractor):
         data = self.request_json(url, headers=headers)
 
         try:
-            data["date"] = text.parse_timestamp(data["created_at"] // 1000)
+            data["date"] = self.parse_timestamp(data["created_at"] // 1000)
             data["count"] = len(data["thumbnails"]["entries"])
             del data["thumbnails"]
         except Exception:
@@ -138,14 +138,13 @@ class SchalenetworkGalleryExtractor(SchalenetworkExtractor, GalleryExtractor):
             name = tag["name"]
             namespace = tag.get("namespace", 0)
             tags.append(types[namespace] + ":" + name)
-        data["tags"] = tags
-
         if self.config("tags", False):
-            tags = collections.defaultdict(list)
+            categories = collections.defaultdict(list)
             for tag in data["tags"]:
-                tags[tag.get("namespace", 0)].append(tag["name"])
-            for type, values in tags.items():
+                categories[tag.get("namespace", 0)].append(tag["name"])
+            for type, values in categories.items():
                 data["tags_" + types[type]] = values
+        data["tags"] = tags
 
         url = f"{self.root_api}/books/detail/{gid}/{gkey}?crt={self._crt()}"
         if token := self._token(False):
@@ -169,6 +168,20 @@ class SchalenetworkGalleryExtractor(SchalenetworkExtractor, GalleryExtractor):
         url = (f"{self.root_api}/books/data/{gid}/{gkey}"
                f"/{fmt['id']}/{fmt['key']}/{fmt['w']}?crt={self._crt()}")
         headers = self.headers
+
+        if self.config("cbz", False):
+            headers["Authorization"] = self._token()
+            dl = self.request_json(
+                f"{url}&action=dl", method="POST", headers=headers)
+            # 'crt' parameter here is necessary for 'hdoujin' downloads
+            url = f"{dl['base']}?crt={self._crt()}"
+            info = text.nameext_from_url(url)
+            if "fallback" in dl:
+                info["_fallback"] = (dl["fallback"],)
+            if not info["extension"]:
+                info["extension"] = "cbz"
+            return ((url, info),)
+
         data = self.request_json(url, headers=headers)
         base = data["base"]
 

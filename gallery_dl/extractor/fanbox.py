@@ -66,18 +66,17 @@ class FanboxExtractor(Extractor):
             if fee_max is not None and fee_max < item["feeRequired"]:
                 self.log.warning("Skipping post %s (feeRequired of %s > %s)",
                                  item["id"], item["feeRequired"], fee_max)
-                continue
+            else:
+                try:
+                    url = ("https://api.fanbox.cc/post.info?postId=" +
+                           item["id"])
+                    item = self.request_json(url, headers=self.headers)["body"]
+                except Exception as exc:
+                    self.log.warning("Skipping post %s (%s: %s)",
+                                     item["id"], exc.__class__.__name__, exc)
 
-            try:
-                url = "https://api.fanbox.cc/post.info?postId=" + item["id"]
-                body = self.request_json(url, headers=self.headers)["body"]
-                content_body, post = self._extract_post(body)
-            except Exception as exc:
-                self.log.warning("Skipping post %s (%s: %s)",
-                                 item["id"], exc.__class__.__name__, exc)
-                continue
-
-            yield Message.Directory, post
+            content_body, post = self._extract_post(item)
+            yield Message.Directory, "", post
             yield from self._get_urls_from_post(content_body, post)
 
     def posts(self):
@@ -128,7 +127,7 @@ class FanboxExtractor(Extractor):
                         if file.get("extension", "").lower() in exts
                     ]
 
-        post["date"] = text.parse_datetime(post["publishedDatetime"])
+        post["date"] = self.parse_datetime_iso(post["publishedDatetime"])
         post["text"] = content_body.get("text") if content_body else None
         post["isCoverImage"] = False
 
@@ -216,7 +215,7 @@ class FanboxExtractor(Extractor):
     def _get_urls_from_post(self, content_body, post):
         num = 0
         if cover_image := post.get("coverImageUrl"):
-            cover_image = util.re("/c/[0-9a-z_]+").sub("", cover_image)
+            cover_image = text.re("/c/[0-9a-z_]+").sub("", cover_image)
             final_post = post.copy()
             final_post["isCoverImage"] = True
             final_post["fileUrl"] = cover_image
@@ -352,7 +351,7 @@ class FanboxExtractor(Extractor):
 class FanboxCreatorExtractor(FanboxExtractor):
     """Extractor for a Fanbox creator's works"""
     subcategory = "creator"
-    pattern = USER_PATTERN + r"(?:/posts)?/?$"
+    pattern = rf"{USER_PATTERN}(?:/posts)?/?$"
     example = "https://USER.fanbox.cc/"
 
     def posts(self):
@@ -362,15 +361,26 @@ class FanboxCreatorExtractor(FanboxExtractor):
 
     def _pagination_creator(self, url):
         urls = self.request_json(url, headers=self.headers)["body"]
+        if offset := self.config("offset"):
+            quotient, remainder = divmod(offset, 10)
+            if quotient:
+                urls = urls[quotient:]
+        else:
+            remainder = None
+
         for url in urls:
             url = text.ensure_http_scheme(url)
-            yield from self.request_json(url, headers=self.headers)["body"]
+            posts = self.request_json(url, headers=self.headers)["body"]
+            if remainder:
+                posts = posts[remainder:]
+                remainder = None
+            yield from posts
 
 
 class FanboxPostExtractor(FanboxExtractor):
     """Extractor for media from a single Fanbox post"""
     subcategory = "post"
-    pattern = USER_PATTERN + r"/posts/(\d+)"
+    pattern = rf"{USER_PATTERN}/posts/(\d+)"
     example = "https://USER.fanbox.cc/posts/12345"
 
     def posts(self):
@@ -380,7 +390,7 @@ class FanboxPostExtractor(FanboxExtractor):
 class FanboxHomeExtractor(FanboxExtractor):
     """Extractor for your Fanbox home feed"""
     subcategory = "home"
-    pattern = BASE_PATTERN + r"/?$"
+    pattern = rf"{BASE_PATTERN}/?$"
     example = "https://fanbox.cc/"
 
     def posts(self):
@@ -391,7 +401,7 @@ class FanboxHomeExtractor(FanboxExtractor):
 class FanboxSupportingExtractor(FanboxExtractor):
     """Extractor for your supported Fanbox users feed"""
     subcategory = "supporting"
-    pattern = BASE_PATTERN + r"/home/supporting"
+    pattern = rf"{BASE_PATTERN}/home/supporting"
     example = "https://fanbox.cc/home/supporting"
 
     def posts(self):
@@ -403,6 +413,7 @@ class FanboxRedirectExtractor(Extractor):
     """Extractor for pixiv redirects to fanbox.cc"""
     category = "fanbox"
     subcategory = "redirect"
+    cookies_domain = None
     pattern = r"(?:https?://)?(?:www\.)?pixiv\.net/fanbox/creator/(\d+)"
     example = "https://www.pixiv.net/fanbox/creator/12345"
 

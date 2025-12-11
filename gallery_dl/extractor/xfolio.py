@@ -45,7 +45,7 @@ class XfolioExtractor(Extractor):
 
 class XfolioWorkExtractor(XfolioExtractor):
     subcategory = "work"
-    pattern = BASE_PATTERN + r"/portfolio/([^/?#]+)/works/(\d+)"
+    pattern = rf"{BASE_PATTERN}/portfolio/([^/?#]+)/works/(\d+)"
     example = "https://xfolio.jp/portfolio/USER/works/12345"
 
     def items(self):
@@ -57,7 +57,7 @@ class XfolioWorkExtractor(XfolioExtractor):
         files = self._extract_files(html, work)
         work["count"] = len(files)
 
-        yield Message.Directory, work
+        yield Message.Directory, "", work
         for work["num"], file in enumerate(files, 1):
             file.update(work)
             yield Message.Url, file["url"], file
@@ -107,7 +107,7 @@ class XfolioWorkExtractor(XfolioExtractor):
 
 class XfolioUserExtractor(XfolioExtractor):
     subcategory = "user"
-    pattern = BASE_PATTERN + r"/portfolio/([^/?#]+)(?:/works)?/?(?:$|\?|#)"
+    pattern = rf"{BASE_PATTERN}/portfolio/([^/?#]+)(?:/works)?/?(?:$|\?|#)"
     example = "https://xfolio.jp/portfolio/USER"
 
     def works(self):
@@ -129,7 +129,7 @@ class XfolioUserExtractor(XfolioExtractor):
 
 class XfolioSeriesExtractor(XfolioExtractor):
     subcategory = "series"
-    pattern = BASE_PATTERN + r"/portfolio/([^/?#]+)/series/(\d+)"
+    pattern = rf"{BASE_PATTERN}/portfolio/([^/?#]+)/series/(\d+)"
     example = "https://xfolio.jp/portfolio/USER/series/12345"
 
     def works(self):

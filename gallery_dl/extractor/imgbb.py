@@ -30,7 +30,7 @@ class ImgbbExtractor(Extractor):
         for image in self.posts():
             url = image["url"]
             text.nameext_from_url(url, image)
-            yield Message.Directory, image
+            yield Message.Directory, "", image
             yield Message.Url, url, image
 
     def login(self):
@@ -159,8 +159,7 @@ class ImgbbImageExtractor(ImgbbExtractor):
             "width" : text.parse_int(extr('"og:image:width" content="', '"')),
             "height": text.parse_int(extr('"og:image:height" content="', '"')),
             "album" : extr("Added to <a", "</a>"),
-            "date"  : text.parse_datetime(extr(
-                '<span title="', '"'), "%Y-%m-%d %H:%M:%S"),
+            "date"  : self.parse_datetime_iso(extr('<span title="', '"')),
             "user"  : util.json_loads(extr(
                 "CHV.obj.resource=", "};") + "}").get("user"),
         }

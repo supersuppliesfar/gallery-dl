@@ -20,7 +20,7 @@ class FapelloPostExtractor(Extractor):
     directory_fmt = ("{category}", "{model}")
     filename_fmt = "{model}_{id}.{extension}"
     archive_fmt = "{type}_{model}_{id}"
-    pattern = BASE_PATTERN + r"/(?!search/|popular_videos/)([^/?#]+)/(\d+)"
+    pattern = rf"{BASE_PATTERN}/(?!search/|popular_videos/)([^/?#]+)/(\d+)"
     example = "https://fapello.com/MODEL/12345/"
 
     def __init__(self, match):
@@ -44,7 +44,7 @@ class FapelloPostExtractor(Extractor):
         }
         url = text.extr(page, 'src="', '"').replace(
             ".md", "").replace(".th", "")
-        yield Message.Directory, data
+        yield Message.Directory, "", data
         yield Message.Url, url, text.nameext_from_url(url, data)
 
 
@@ -52,9 +52,9 @@ class FapelloModelExtractor(Extractor):
     """Extractor for all posts from a fapello model"""
     category = "fapello"
     subcategory = "model"
-    pattern = (BASE_PATTERN + r"/(?!top-(?:likes|followers)|popular_videos"
-               r"|videos|trending|search/?$)"
-               r"([^/?#]+)/?$")
+    pattern = (rf"{BASE_PATTERN}/(?!top-(?:likes|followers)|popular_videos"
+               rf"|videos|trending|search/?$)"
+               rf"([^/?#]+)/?$")
     example = "https://fapello.com/model/"
 
     def __init__(self, match):
@@ -85,9 +85,9 @@ class FapelloPathExtractor(Extractor):
     """Extractor for models and posts from fapello.com paths"""
     category = "fapello"
     subcategory = "path"
-    pattern = (BASE_PATTERN +
-               r"/(?!search/?$)(top-(?:likes|followers)|videos|trending"
-               r"|popular_videos/[^/?#]+)/?$")
+    pattern = (rf"{BASE_PATTERN}/(?!search/?$)"
+               rf"(top-(?:likes|followers)|videos|trending"
+               rf"|popular_videos/[^/?#]+)/?$")
     example = "https://fapello.com/trending/"
 
     def __init__(self, match):

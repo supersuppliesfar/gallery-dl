@@ -65,7 +65,7 @@ class PixnetImageExtractor(PixnetExtractor):
     subcategory = "image"
     filename_fmt = "{id}.{extension}"
     directory_fmt = ("{category}", "{blog}")
-    pattern = BASE_PATTERN + r"/album/photo/(\d+)"
+    pattern = rf"{BASE_PATTERN}/album/photo/(\d+)"
     example = "https://USER.pixnet.net/album/photo/12345"
 
     def items(self):
@@ -83,7 +83,7 @@ class PixnetImageExtractor(PixnetExtractor):
         data["blog"] = self.blog
         data["user"] = data.pop("author_name")
 
-        yield Message.Directory, data
+        yield Message.Directory, "", data
         yield Message.Url, data["url"], data
 
 
@@ -92,7 +92,7 @@ class PixnetSetExtractor(PixnetExtractor):
     subcategory = "set"
     directory_fmt = ("{category}", "{blog}",
                      "{folder_id} {folder_title}", "{set_id} {set_title}")
-    pattern = BASE_PATTERN + r"/album/set/(\d+)"
+    pattern = rf"{BASE_PATTERN}/album/set/(\d+)"
     example = "https://USER.pixnet.net/album/set/12345"
 
     def items(self):
@@ -100,7 +100,7 @@ class PixnetSetExtractor(PixnetExtractor):
         page = self.request(url, encoding="utf-8").text
         data = self.metadata(page)
 
-        yield Message.Directory, data
+        yield Message.Directory, "", data
         for num, info in enumerate(self._pagination(page), 1):
             url, pos = text.extract(info, ' href="', '"')
             src, pos = text.extract(info, ' src="', '"', pos)
@@ -137,7 +137,7 @@ class PixnetFolderExtractor(PixnetExtractor):
     """Extractor for all sets in a pixnet folder"""
     subcategory = "folder"
     url_fmt = "{}/album/folder/{}"
-    pattern = BASE_PATTERN + r"/album/folder/(\d+)"
+    pattern = rf"{BASE_PATTERN}/album/folder/(\d+)"
     example = "https://USER.pixnet.net/album/folder/12345"
 
 
@@ -145,5 +145,5 @@ class PixnetUserExtractor(PixnetExtractor):
     """Extractor for all sets and folders of a pixnet user"""
     subcategory = "user"
     url_fmt = "{}{}/album/list"
-    pattern = BASE_PATTERN + r"()(?:/blog|/album(?:/list)?)?/?(?:$|[?#])"
+    pattern = rf"{BASE_PATTERN}()(?:/blog|/album(?:/list)?)?/?(?:$|[?#])"
     example = "https://USER.pixnet.net/"

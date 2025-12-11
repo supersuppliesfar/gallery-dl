@@ -70,8 +70,7 @@ class BoothItemExtractor(BoothExtractor):
                 url + ".json", headers=headers, interval=False)
 
         item["booth_category"] = item.pop("category", None)
-        item["date"] = text.parse_datetime(
-            item["published_at"], "%Y-%m-%dT%H:%M:%S.%f%z")
+        item["date"] = self.parse_datetime_iso(item["published_at"])
         item["tags"] = [t["name"] for t in item["tags"]]
 
         shop = item["shop"]
@@ -84,7 +83,7 @@ class BoothItemExtractor(BoothExtractor):
             item["count"] = 0
             shop["uuid"] = util.NONE
 
-        yield Message.Directory, item
+        yield Message.Directory, "", item
         for num, file in enumerate(files, 1):
             url = file["url"]
             file["num"] = num

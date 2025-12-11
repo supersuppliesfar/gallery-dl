@@ -30,6 +30,7 @@ CATEGORY_MAP = {
     "ao3"            : "Archive of Our Own",
     "archivedmoe"    : "Archived.Moe",
     "archiveofsins"  : "Archive of Sins",
+    "arena"          : "Are.na",
     "artstation"     : "ArtStation",
     "aryion"         : "Eka's Portal",
     "atfbooru"       : "ATFBooru",
@@ -39,6 +40,7 @@ CATEGORY_MAP = {
     "batoto"         : "BATO.TO",
     "bbc"            : "BBC",
     "booth"          : "BOOTH",
+    "cfake"          : "Celebrity Fakes",
     "cien"           : "Ci-en",
     "cohost"         : "cohost!",
     "comicvine"      : "Comic Vine",
@@ -51,6 +53,7 @@ CATEGORY_MAP = {
     "e926"           : "e926",
     "e6ai"           : "e6AI",
     "erome"          : "EroMe",
+    "eporner"        : "EPORNER",
     "everia"         : "EVERIA.CLUB",
     "e-hentai"       : "E-Hentai",
     "exhentai"       : "ExHentai",
@@ -58,6 +61,8 @@ CATEGORY_MAP = {
     "fanbox"         : "pixivFANBOX",
     "fappic"         : "Fappic.com",
     "fashionnova"    : "Fashion Nova",
+    "fikfap"         : "FikFap",
+    "fitnakedgirls"  : "FitNakedGirls",
     "furaffinity"    : "Fur Affinity",
     "furry34"        : "Furry 34 com",
     "girlswithmuscle": "Girls with Muscle",
@@ -104,7 +109,9 @@ CATEGORY_MAP = {
     "jpgfish"        : "JPG Fish",
     "kabeuchi"       : "かべうち",
     "mangafire"      : "MangaFire",
+    "mangareader"    : "MangaReader",
     "mangataro"      : "MangaTaro",
+    "s3ndpics"       : "S3ND",
     "schalenetwork"  : "Schale Network",
     "leakgallery"    : "Leak Gallery",
     "livedoor"       : "livedoor Blog",
@@ -135,6 +142,7 @@ CATEGORY_MAP = {
     "nozrip"         : "GaryC Booru",
     "nsfwalbum"      : "NSFWalbum.com",
     "nudostar"       : "NudoStar.TV",
+    "okporn"         : "OK.PORN",
     "paheal"         : "Rule 34",
     "photovogue"     : "PhotoVogue",
     "picstate"       : "PicState",
@@ -146,9 +154,9 @@ CATEGORY_MAP = {
     "pornimage"      : "Porn Image",
     "pornpics"       : "PornPics.com",
     "pornreactor"    : "PornReactor",
+    "pornstarstube"  : "PORNSTARS.TUBE",
     "postimg"        : "Postimages",
     "readcomiconline": "Read Comic Online",
-    "redbust"        : "RedBust",
     "rbt"            : "RebeccaBlackTech",
     "redgifs"        : "RedGIFs",
     "rozenarcana"    : "Rozen Arcana",
@@ -238,6 +246,9 @@ SUBCATEGORY_MAP = {
         "artwork": "Artwork Listings",
         "collections": "",
     },
+    "audiochan": {
+        "audio": "Audios",
+    },
     "bilibili": {
         "user-articles-favorite": "User Article Favorites",
     },
@@ -246,6 +257,9 @@ SUBCATEGORY_MAP = {
     },
     "boosty": {
         "feed": "Subscriptions Feed",
+    },
+    "cfake": {
+        "created": "Created",
     },
     "civitai": {
         "models": "Model Listings",
@@ -262,6 +276,9 @@ SUBCATEGORY_MAP = {
         "discord"       : "",
         "discord-server": "",
         "posts"         : "",
+    },
+    "cyberfile": {
+        "shared": "Shares",
     },
     "Danbooru": {
         "favgroup": "Favorite Groups",
@@ -368,9 +385,6 @@ SUBCATEGORY_MAP = {
         "post"           : "Individual Posts",
         "shorturl"       : "",
     },
-    "redbust": {
-        "gallery": ("Galleries", "Categories"),
-    },
     "redgifs": {
         "collections": "",
     },
@@ -382,6 +396,7 @@ SUBCATEGORY_MAP = {
     },
     "sexcom": {
         "pins": "User Pins",
+        "feed": "Feed",
     },
     "sizebooru": {
         "user": "User Uploads",
@@ -517,19 +532,21 @@ AUTH_MAP = {
     "pinterest"      : _COOKIES,
     "pixiv"          : _OAUTH,
     "pixiv-novel"    : _OAUTH,
+    "poipiku"        : _COOKIES,
     "ponybooru"      : "API Key",
     "reddit"         : _OAUTH,
     "rule34xyz"      : "Supported",
     "sankaku"        : "Supported",
     "scrolller"      : "Supported",
     "seiga"          : "Supported",
+    "simpcity"       : "Supported",
     "smugmug"        : _OAUTH,
     "subscribestar"  : "Supported",
     "tapas"          : "Supported",
     "tiktok"         : _COOKIES,
     "tsumino"        : "Supported",
     "tumblr"         : _OAUTH,
-    "twitter"        : "Supported",
+    "twitter"        : _COOKIES,
     "vipergirls"     : "Supported",
     "wallhaven"      : _APIKEY_WH,
     "weasyl"         : _APIKEY_WY,
@@ -672,6 +689,7 @@ def build_extractor_list():
     base["imgtaxi"] = base["imgdrive"]
     base["imgwallet"] = base["imgdrive"]
     categories["imagehost"] = {k: base[k] for k in sorted(base)}
+    domains["postimg"] = "https://postimages.org/"
     domains["imgtaxi"] = "https://imgtaxi.com/"
     domains["imgwallet"] = "https://imgwallet.com/"
 

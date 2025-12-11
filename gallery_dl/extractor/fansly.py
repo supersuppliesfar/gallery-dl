@@ -9,7 +9,7 @@
 """Extractors for https://fansly.com/"""
 
 from .common import Extractor, Message
-from .. import text, util
+from .. import text, util, exception
 import time
 
 BASE_PATTERN = r"(?:https?://)?(?:www\.)?fansly\.com"
@@ -35,16 +35,34 @@ class FanslyExtractor(Extractor):
         for post in self.posts():
             files = self._extract_files(post)
             post["count"] = len(files)
-            post["date"] = text.parse_timestamp(post["createdAt"])
+            post["date"] = self.parse_timestamp(post["createdAt"])
 
-            yield Message.Directory, post
+            yield Message.Directory, "", post
             for post["num"], file in enumerate(files, 1):
                 post.update(file)
                 url = file["url"]
                 yield Message.Url, url, text.nameext_from_url(url, post)
 
+    def posts(self):
+        creator, wall_id = self.groups
+        account = self.api.account(creator)
+        walls = account["walls"]
+
+        if wall_id:
+            for wall in walls:
+                if wall["id"] == wall_id:
+                    break
+            else:
+                raise exception.NotFoundError("wall")
+            walls = (wall,)
+
+        for wall in walls:
+            self.kwdict["wall"] = wall
+            yield from self.posts_wall(account, wall)
+
     def _extract_files(self, post):
-        files = []
+        if "attachments" not in post:
+            return ()
 
         if "_extra" in post:
             extra = post.pop("_extra", ())
@@ -58,11 +76,12 @@ class FanslyExtractor(Extractor):
                 if mid in media
             )
 
+        files = []
         for attachment in post.pop("attachments"):
             try:
                 self._extract_attachment(files, post, attachment)
             except Exception as exc:
-                self.log.debug("", exc_info=exc)
+                self.log.traceback(exc)
                 self.log.error(
                     "%s/%s, Failed to extract media (%s: %s)",
                     post["id"], attachment.get("id"),
@@ -77,7 +96,7 @@ class FanslyExtractor(Extractor):
             variants.append(media)
 
         formats = [
-            (type > 256, variant["width"], type, variant)
+            (variant["width"], (type-500 if type > 256 else type), variant)
             for variant in variants
             if variant.get("locations") and
             (type := variant["type"]) in self.formats
@@ -100,8 +119,8 @@ class FanslyExtractor(Extractor):
         file = {
             **variant,
             "format": variant["type"],
-            "date": text.parse_timestamp(media["createdAt"]),
-            "date_updated": text.parse_timestamp(media["updatedAt"]),
+            "date": self.parse_timestamp(media["createdAt"]),
+            "date_updated": self.parse_timestamp(media["updatedAt"]),
         }
 
         if "metadata" in location:
@@ -190,11 +209,8 @@ class FanslyCreatorPostsExtractor(FanslyExtractor):
     pattern = rf"{BASE_PATTERN}/([^/?#]+)/posts(?:/wall/(\d+))?"
     example = "https://fansly.com/CREATOR/posts"
 
-    def posts(self):
-        creator, wall_id = self.groups
-        account = self.api.account(creator)
-        return self.api.timeline_new(
-            account["id"], wall_id or account["walls"][0]["id"])
+    def posts_wall(self, account, wall):
+        return self.api.timeline_new(account["id"], wall["id"])
 
 
 class FanslyCreatorMediaExtractor(FanslyExtractor):
@@ -202,11 +218,8 @@ class FanslyCreatorMediaExtractor(FanslyExtractor):
     pattern = rf"{BASE_PATTERN}/([^/?#]+)/media(?:/wall/(\d+))?"
     example = "https://fansly.com/CREATOR/media"
 
-    def posts(self):
-        creator, wall_id = self.groups
-        account = self.api.account(creator)
-        return self.api.mediaoffers_location(
-            account["id"], wall_id or account["walls"][0]["id"])
+    def posts_wall(self, account, wall):
+        return self.api.mediaoffers_location(account["id"], wall["id"])
 
 
 class FanslyAPI():
@@ -320,12 +333,20 @@ class FanslyAPI():
 
         posts = response["posts"]
         for post in posts:
-            post["account"] = accounts[post.pop("accountId")]
+            try:
+                post["account"] = accounts[post.pop("accountId")]
+            except KeyError:
+                pass
 
             extra = None
             attachments = []
             for attachment in post["attachments"]:
-                cid = attachment["contentId"]
+                try:
+                    cid = attachment["contentId"]
+                except KeyError:
+                    attachments.append(attachment)
+                    continue
+
                 if cid in media:
                     attachments.append(media[cid])
                 elif cid in bundles:
