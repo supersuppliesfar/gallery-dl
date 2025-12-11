@@ -35,7 +35,7 @@ class PicazorUserExtractor(PicazorExtractor):
 
     def items(self):
         data = {"user": self.user}
-        yield Message.Directory, data
+        yield Message.Directory, "", data
 
         for num, image_data in enumerate(self._get_all_files(), 1):
             image_data["num"] = num
