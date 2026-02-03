@@ -4,13 +4,17 @@
 # it under the terms of the GNU General Public License version 2 as
 # published by the Free Software Foundation.
 
-"""Extractors for https://fapello.com/"""
+"""Extractors for https://fapello.com/ and fapello.invisionfree.com"""
 
 from .common import Extractor, Message
 from .. import text, exception
 
-
-BASE_PATTERN = r"(?:https?://)?(?:www\.)?fapello\.(?:com|su)"
+# fapello.com/su vs invisionfree have different HTML and APIs
+BASE_PATTERN = (
+    r"(?:https?://)?(?:(?:www\.)?fapello\.(?:com|su)|"
+    r"(?:[\w-]+\.)?fapello\.invisionfree\.com)"
+)
+MAIN_SITE_PATTERN = r"(?:https?://)?(?:www\.)?fapello\.(?:com|su)"
 
 
 class FapelloPostExtractor(Extractor):
@@ -20,7 +24,7 @@ class FapelloPostExtractor(Extractor):
     directory_fmt = ("{category}", "{model}")
     filename_fmt = "{model}_{id}.{extension}"
     archive_fmt = "{type}_{model}_{id}"
-    pattern = BASE_PATTERN + r"/(?!search/|popular_videos/)([^/?#]+)/(\d+)"
+    pattern = MAIN_SITE_PATTERN + r"/(?!search/|popular_videos/)([^/?#]+)/(\d+)"
     example = "https://fapello.com/MODEL/12345/"
 
     def __init__(self, match):
@@ -63,6 +67,9 @@ class FapelloModelExtractor(Extractor):
         self.model = match[1]
 
     def items(self):
+        if "invisionfree" in self.root:
+            yield from self._items_invisionfree()
+            return
         num = 1
         data = {"_extractor": FapelloPostExtractor}
         while True:
@@ -79,6 +86,75 @@ class FapelloModelExtractor(Extractor):
             if url is None:
                 return
             num += 1
+
+    def _items_invisionfree(self):
+        root = self.root.rstrip("/")
+        base = root + "/" + self.model
+        seen = set()
+        media_extensions = (
+            ".jpg", ".jpeg", ".png", ".gif", ".webp", ".mp4", ".webm",
+            ".mov", ".avi", ".mkv")
+        page_num = 1
+        data = {"model": self.model}
+        yielded_dir = False
+
+        while True:
+            if page_num == 1:
+                url = base + "/"
+            else:
+                url = f"{base}/page-{page_num}/"
+            try:
+                response = self.request(url)
+            except exception.HttpError:
+                break
+            page = response.text
+            if not page:
+                break
+
+            new = 0
+            for href in text.extract_iter(page, 'href="', '"'):
+                if href.startswith("http"):
+                    media_url = href
+                elif href.startswith("//"):
+                    media_url = "https:" + href
+                elif href.startswith("/"):
+                    media_url = root + href
+                else:
+                    continue
+                low = media_url.lower()
+                if any(low.rpartition("?")[0].endswith(ext) for ext in media_extensions):
+                    if media_url not in seen:
+                        seen.add(media_url)
+                        new += 1
+                        if not yielded_dir:
+                            yielded_dir = True
+                            yield Message.Directory, "", data
+                        yield Message.Url, media_url, text.nameext_from_url(
+                            media_url, data.copy())
+
+            for src in text.extract_iter(page, 'src="', '"'):
+                if src.startswith("http"):
+                    media_url = src
+                elif src.startswith("//"):
+                    media_url = "https:" + src
+                elif src.startswith("/"):
+                    media_url = root + src
+                else:
+                    continue
+                low = media_url.lower()
+                if any(low.rpartition("?")[0].endswith(ext) for ext in media_extensions):
+                    if media_url not in seen:
+                        seen.add(media_url)
+                        new += 1
+                        if not yielded_dir:
+                            yielded_dir = True
+                            yield Message.Directory, "", data
+                        yield Message.Url, media_url, text.nameext_from_url(
+                            media_url, data.copy())
+
+            if new == 0:
+                break
+            page_num += 1
 
 
 class FapelloPathExtractor(Extractor):
