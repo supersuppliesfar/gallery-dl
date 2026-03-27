@@ -76,6 +76,12 @@ __tests__ = (
 },
 
 {
+    "#url"     : "https://fapello.invisionfree.com/ucanthandlemia-1/",
+    "#category": ("", "fapello", "model"),
+    "#class"   : fapello.FapelloModelExtractor,
+},
+
+{
     "#url"     : "https://fapello.com/top-likes/",
     "#category": ("", "fapello", "path"),
     "#class"   : fapello.FapelloPathExtractor,
