@@ -161,6 +161,8 @@ Using the Dockerfile in the repository:
     cd gallery-dl/
     docker build -t gallery-dl:latest .
 
+The image uses the source in the build directory, including local changes.
+
 Pulling image from `Docker Hub <https://hub.docker.com/r/mikf123/gallery-dl>`__:
 
 .. code:: bash
