@@ -154,6 +154,7 @@ CATEGORY_MAP = {
     "nozomi"         : "Nozomi.la",
     "nozrip"         : "GaryC Booru",
     "nsfwalbum"      : "NSFWalbum.com",
+    "nudogram"       : "Nudogram",
     "nudostar"       : "NudoStar.TV",
     "nudostarforum"  : "NudoStar Forums",
     "okporn"         : "OK.PORN",
