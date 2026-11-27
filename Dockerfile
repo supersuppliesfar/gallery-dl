@@ -16,8 +16,15 @@ RUN : \
     && python3 -B -m pip --no-cache-dir --no-input --disable-pip-version-check install --root-user-action ignore -U \
         --require-hashes --only-binary :all: \
         -r requirements/docker \
+    && :
+
+# Install the checked-out source, including local extractor changes.
+COPY . /src/gallery-dl
+
+RUN : \
     && python3 -B -m pip --no-cache-dir --no-input --disable-pip-version-check install --root-user-action ignore -U \
-        https://codeberg.org/mikf/gallery-dl/archive/master.tar.gz \
+        --no-deps /src/gallery-dl \
+    && rm -rf /src/gallery-dl \
     && python3 -B -m pip --no-cache-dir --no-input --disable-pip-version-check freeze \
     && ( rm -rf /root/.cache/pip || true ) \
     && ( find /usr/local/lib/python3.*/site-packages/setuptools -name __pycache__ -exec rm -rf {} + || true ) \
