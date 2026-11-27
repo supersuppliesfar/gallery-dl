@@ -709,6 +709,12 @@ Consider all listed sites to potentially be NSFW.
     <td>Albums, Channels</td>
     <td>Supported</td>
 </tr>
+<tr id="masterfap" title="masterfap">
+    <td>MasterFap</td>
+    <td>https://www.masterfap.net/</td>
+    <td>individual Images, User Profiles</td>
+    <td></td>
+</tr>
 <tr id="mixdrop" title="mixdrop">
     <td>MixDrop</td>
     <td>https://mixdrop.ag/</td>

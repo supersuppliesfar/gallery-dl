@@ -138,6 +138,7 @@ CATEGORY_MAP = {
     "mangapark"      : "MangaPark",
     "mangaread"      : "MangaRead",
     "mariowiki"      : "Super Mario Wiki",
+    "masterfap"      : "MasterFap",
     "mastodon.social": "mastodon.social",
     "mediawiki"      : "MediaWiki",
     "micmicidol"     : "MIC MIC IDOL",

@@ -137,6 +137,7 @@ modules = [
     "mangataro",
     "mangatown",
     "mangoxo",
+    "masterfap",
     "misskey",
     "mixdrop",
     "motherless",
